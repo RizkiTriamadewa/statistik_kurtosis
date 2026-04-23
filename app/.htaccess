@@ -1,0 +1,13 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+</IfModule>
+
+# Mengizinkan server membaca folder _next yang berisi CSS & JS Next.js
+<Directory "_next">
+  AllowOverride None
+  Require all granted
+</Directory>
+
+# Mengatur agar error 404 (Halaman tidak ditemukan) diarahkan ke halaman 404 Next.js
+ErrorDocument 404 /404.html

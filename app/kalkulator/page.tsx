@@ -5,7 +5,7 @@ import { useReactToPrint } from 'react-to-print';
 import Link from 'next/link';
 import { 
   ArrowLeft, Upload, FileText, Plus, Trash2, 
-  Calculator, Printer, Info, Activity, BarChart3, LineChart 
+  Calculator, Printer, Info, Activity, BarChart3, LineChart, Home, TableProperties, ListOrdered
 } from 'lucide-react';
 
 import StatsChart from '../components/StatsChart';
@@ -23,6 +23,7 @@ export interface TableTotals extends SumsAccumulator { freq: number; f: number; 
 export interface StatsResult { mean: number; median: number; mode: number | number[]; stdDev: number; variance: number; meanDeviation: number; coeffVariation: number; sk1: number; sk2: number; gamma1: number; gamma2: number; sk4: number; sk5: number; skewness: number; kurtosis: number; q1: number; q3: number; p10: number; p90: number; min: number; max: number; range: number; histogram: HistogramResult; rawDataArray: number[]; detailedTable: DetailedRow[]; tableTotals: TableTotals; codingP: number; assumedMean: number; mu1_u: number; mu2_u: number; mu3_u: number; mu4_u: number; m2_x: number; m3_x: number; m4_x: number; medL: number; medFk: number; medF: number; q1L: number; q1Fk: number; q1F: number; q3L: number; q3Fk: number; q3F: number; modeL: number; modeD1: number; modeD2: number; isSingleMode: boolean; }
 interface DataRow { id: number; x: string; f: string; }
 type InputMode = 'single' | 'interval';
+type ResultTab = 'ringkasan' | 'tabel' | 'langkah';
 
 // ==========================================
 // 2. LOGIKA KALKULATOR
@@ -87,6 +88,7 @@ const calculateSingleStats = (rows: DataRow[]): StatsResult => {
 // ==========================================
 export default function KalkulatorPage() {
   const [inputMode, setInputMode] = useState<InputMode>('interval');
+  const [activeTab, setActiveTab] = useState<ResultTab>('ringkasan');
   const [rows, setRows] = useState<DataRow[]>([
     { id: 1, x: '31-40', f: '4' }, { id: 2, x: '41-50', f: '3' }, { id: 3, x: '51-60', f: '5' },
     { id: 4, x: '61-70', f: '8' }, { id: 5, x: '71-80', f: '11' }, { id: 6, x: '81-90', f: '7' }, { id: 7, x: '91-100', f: '2' },
@@ -112,6 +114,9 @@ export default function KalkulatorPage() {
     try { 
         if (inputMode === 'single') setResults(calculateSingleStats(rows)); 
         else setResults(calculateGroupedStats(rows));
+        
+        // Selalu kembali ke tab ringkasan setelah hitung baru
+        setActiveTab('ringkasan');
     } catch (err: any) { console.error(err); setError('Pastikan input angka valid & tidak kosong.'); }
   };
 
@@ -158,10 +163,8 @@ export default function KalkulatorPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#F4F7F9] text-slate-800 font-sans selection:bg-indigo-600 selection:text-white pt-6 pb-20 relative overflow-hidden">
+    <div className="min-h-screen bg-[#F4F7F9] text-slate-800 font-sans selection:bg-indigo-600 selection:text-white pb-20 relative overflow-hidden">
       
-      {/* Background Decor dihapus agar tidak bentrok, diganti dengan bg global F4F7F9 yang bersih */}
-
       <style jsx global>{`
         @media print {
           @page { size: auto; margin: 15mm; }
@@ -169,26 +172,44 @@ export default function KalkulatorPage() {
           .print\\:break-inside-avoid { break-inside: avoid !important; }
           .print\\:hidden { display: none !important; }
           .print\\:w-full { width: 100% !important; max-width: none !important; }
+          
+          /* MEMAKSA SEMUA TAB MUNCUL SAAT DI PRINT */
+          .print\\:block { display: block !important; }
+          .print\\:grid { display: grid !important; }
         }
         .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        
+        @keyframes fadeInUp {
+          0% { opacity: 0; transform: translateY(20px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-up {
+          animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .delay-100 { animation-delay: 100ms; }
+        .delay-200 { animation-delay: 200ms; }
+        .delay-300 { animation-delay: 300ms; }
+        .delay-400 { animation-delay: 400ms; }
       `}</style>
 
-      {/* HEADER NAV (DIUBAH MENJADI TEMA TERANG / LIGHT THEME) */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 mb-8 flex justify-between items-center print:hidden relative z-10">
-         <Link href="/" className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-bold text-sm transition-colors bg-white px-5 py-2 rounded-full shadow-sm border border-slate-200">
-            <ArrowLeft size={16} /> Beranda
-         </Link>
-         <h1 className="font-black text-2xl tracking-tight text-slate-800 flex items-center gap-3">
-            <div className="bg-indigo-500 text-white p-1.5 rounded-lg"><Activity size={20} /></div> StatistikPro
-         </h1>
-      </div>
+      {/* HEADER NAV */}
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 w-full mb-8 print:hidden shadow-sm">
+        <div className="max-w-[95%] 2xl:max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+           <Link href="/" className="flex items-center gap-2 text-slate-600 hover:text-indigo-600 font-bold text-sm transition-all bg-slate-100 hover:bg-indigo-50 px-5 py-2.5 rounded-full border border-slate-200 hover:border-indigo-200 shadow-sm group">
+              <Home size={16} className="group-hover:-translate-x-1 transition-transform" /> Kembali ke Beranda
+           </Link>
+           <h1 className="font-black text-2xl tracking-tight text-slate-800 flex items-center gap-3">
+              <div className="bg-indigo-500 text-white p-1.5 rounded-lg shadow-md shadow-indigo-500/20"><Activity size={20} /></div> StatistikPro
+           </h1>
+        </div>
+      </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-1 lg:grid-cols-12 gap-8 relative z-10">
+      <main className="max-w-[95%] 2xl:max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-8 relative z-10">
           
-          {/* TAB MODE SWITCHER (DIUBAH MENJADI TEMA TERANG) */}
-          <div className="lg:col-span-12 flex justify-center mb-2 print:hidden">
+          {/* TAB MODE SWITCHER (INPUT) */}
+          <div className="lg:col-span-12 flex justify-center mb-2 print:hidden animate-fade-in-up" style={{ opacity: 0 }}>
             <div className="flex bg-slate-200/70 p-1.5 rounded-2xl shadow-inner border border-slate-200 w-fit">
               <button onClick={() => setInputMode('single')} className={`px-8 py-3 text-sm font-bold rounded-xl transition-all duration-300 ${inputMode === 'single' ? 'bg-white shadow-md text-indigo-700' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50'}`}>Data Tunggal</button>
               <button onClick={() => setInputMode('interval')} className={`px-8 py-3 text-sm font-bold rounded-xl transition-all duration-300 ${inputMode === 'interval' ? 'bg-white shadow-md text-indigo-700' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50'}`}>Data Kelompok</button>
@@ -196,9 +217,8 @@ export default function KalkulatorPage() {
           </div>
 
           {/* SIDEBAR INPUT */}
-          <div className="lg:col-span-4 xl:col-span-3 space-y-4 print:hidden">
-            <div className="bg-white rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden sticky top-6">
-              
+          <div className="lg:col-span-4 xl:col-span-3 space-y-4 print:hidden animate-fade-in-up delay-100" style={{ opacity: 0 }}>
+            <div className="bg-white rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden sticky top-[100px]">
               <div className="p-6 bg-gradient-to-r from-slate-50 to-white border-b border-slate-100 flex justify-between items-center">
                 <h3 className="font-black text-sm text-slate-800 flex items-center gap-2 uppercase tracking-wide">
                    <div className="bg-indigo-100 text-indigo-600 p-1.5 rounded-lg"><Calculator size={16}/></div> Input Data
@@ -255,69 +275,137 @@ export default function KalkulatorPage() {
           {/* MAIN RESULTS PANEL */}
           <div className="lg:col-span-8 xl:col-span-9 space-y-6 print:col-span-12 print:w-full">
              {results ? (
-                <div className="animate-fade-in duration-500 space-y-8">
+                <div className="space-y-6">
                    
-                   {/* HEADER HASIL */}
-                   <div className="flex justify-between items-center bg-white p-6 md:px-8 md:py-6 rounded-[2rem] shadow-sm border border-slate-100 print:hidden">
-                      <div>
-                        <h2 className="font-black text-slate-900 text-2xl tracking-tight">Laporan Analisis</h2>
-                        <div className="flex items-center gap-2 mt-2">
-                           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                           <p className="text-sm font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-lg">Data {results.isSingleMode ? 'Tunggal' : 'Kelompok'} Berhasil Dihitung</p>
+                   {/* HEADER HASIL & NAVIGASI TAB */}
+                   <div className="bg-white p-4 md:p-6 rounded-[2rem] shadow-sm border border-slate-100 print:hidden animate-fade-in-up" style={{ opacity: 0 }}>
+                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                        <div>
+                          <h2 className="font-black text-slate-900 text-2xl tracking-tight">Laporan Analisis</h2>
+                          <div className="flex items-center gap-2 mt-2">
+                             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                             <p className="text-sm font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-lg">Data {results.isSingleMode ? 'Tunggal' : 'Kelompok'} Berhasil Dihitung</p>
+                          </div>
                         </div>
+                        <button onClick={() => handlePrint()} className="flex items-center gap-2 bg-indigo-50 text-indigo-700 px-6 py-3.5 rounded-2xl text-sm font-bold hover:bg-indigo-600 hover:text-white transition-all shadow-sm group">
+                           <Printer size={18} className="group-hover:scale-110 transition-transform"/> Cetak PDF
+                        </button>
                       </div>
-                      <button onClick={() => handlePrint()} className="flex items-center gap-2 bg-indigo-50 text-indigo-700 px-6 py-3.5 rounded-2xl text-sm font-bold hover:bg-indigo-600 hover:text-white transition-all shadow-sm">
-                         <Printer size={18}/> Cetak Laporan
-                      </button>
+
+                      {/* TAB BUTTONS */}
+                      <div className="flex overflow-x-auto custom-scrollbar pb-2 space-x-2 bg-slate-50 p-2 rounded-2xl border border-slate-100">
+                         <button 
+                            onClick={() => setActiveTab('ringkasan')} 
+                            className={`flex items-center gap-2 px-5 py-3 text-sm font-bold rounded-xl transition-all whitespace-nowrap ${activeTab === 'ringkasan' ? 'bg-white shadow-sm text-indigo-700 ring-1 ring-slate-200' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50'}`}>
+                            <BarChart3 size={16}/> Ringkasan & Kurva
+                         </button>
+                         <button 
+                            onClick={() => setActiveTab('tabel')} 
+                            className={`flex items-center gap-2 px-5 py-3 text-sm font-bold rounded-xl transition-all whitespace-nowrap ${activeTab === 'tabel' ? 'bg-white shadow-sm text-indigo-700 ring-1 ring-slate-200' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50'}`}>
+                            <TableProperties size={16}/> Tabel Analisis
+                         </button>
+                         <button 
+                            onClick={() => setActiveTab('langkah')} 
+                            className={`flex items-center gap-2 px-5 py-3 text-sm font-bold rounded-xl transition-all whitespace-nowrap ${activeTab === 'langkah' ? 'bg-white shadow-sm text-indigo-700 ring-1 ring-slate-200' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50'}`}>
+                            <ListOrdered size={16}/> Langkah Penyelesaian
+                         </button>
+                      </div>
                    </div>
 
                    {/* AREA CETAK (PRINT REF) */}
-                   <div ref={printRef} className="space-y-8 print:p-8 print:bg-white">
+                   <div ref={printRef} className="space-y-8 print:p-8 print:bg-white w-full">
+                      
+                      {/* PRINT HEADER ONLY */}
                       <div className="hidden print:block mb-10 border-b-4 border-slate-900 pb-6">
                         <h1 className="text-5xl font-black text-slate-900 tracking-tighter">Laporan StatistikPro</h1>
                         <p className="text-base font-bold text-slate-500 mt-2 uppercase tracking-widest">Dokumen Analisis Otomatis</p>
                       </div>
 
-                      {/* SUMMARY CARDS */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 print:grid-cols-4">
-                          <SummaryCard title="Rata-rata (Mean)" value={(results.mean ?? 0).toLocaleString('id-ID', { maximumFractionDigits: 2 })} icon={Calculator} colorClass="text-blue-600 bg-blue-500" />
-                          <SummaryCard title="Modus" value={Array.isArray(results.mode) ? results.mode.join(', ') : (results.mode ?? 0).toLocaleString('id-ID', { maximumFractionDigits: 2 })} icon={BarChart3} colorClass="text-purple-600 bg-purple-500" />
-                          <SummaryCard title="Simpangan Baku" value={(results.stdDev ?? 0).toLocaleString('id-ID', { maximumFractionDigits: 2 })} icon={Activity} colorClass="text-emerald-600 bg-emerald-500" />
-                          <SummaryCard title="Skewness (Momen)" value={(results.gamma1 ?? 0).toLocaleString('id-ID', { maximumFractionDigits: 3 })} sub={`Kurtosis: ${(results.gamma2 ?? 0).toFixed(3)}`} icon={LineChart} colorClass="text-amber-600 bg-amber-500" />
+                      {/* ========================================= */}
+                      {/* TAB 1: RINGKASAN & VISUAL */}
+                      {/* ========================================= */}
+                      <div className={`space-y-8 ${activeTab === 'ringkasan' ? 'block animate-fade-in-up' : 'hidden print:block'}`}>
+                         
+                         {/* SUMMARY CARDS */}
+                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 print:grid-cols-4">
+                             <SummaryCard title="Rata-rata (Mean)" value={(results.mean ?? 0).toLocaleString('id-ID', { maximumFractionDigits: 2 })} icon={Calculator} colorClass="text-blue-600 bg-blue-500" />
+                             <SummaryCard title="Modus" value={Array.isArray(results.mode) ? results.mode.join(', ') : (results.mode ?? 0).toLocaleString('id-ID', { maximumFractionDigits: 2 })} icon={BarChart3} colorClass="text-purple-600 bg-purple-500" />
+                             <SummaryCard title="Simpangan Baku" value={(results.stdDev ?? 0).toLocaleString('id-ID', { maximumFractionDigits: 2 })} icon={Activity} colorClass="text-emerald-600 bg-emerald-500" />
+                             <SummaryCard title="Skewness (Momen)" value={(results.gamma1 ?? 0).toLocaleString('id-ID', { maximumFractionDigits: 3 })} sub={`Kurtosis: ${(results.gamma2 ?? 0).toFixed(3)}`} icon={LineChart} colorClass="text-amber-600 bg-amber-500" />
+                         </div>
+                         
+                         {/* CHARTS */}
+                         <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden print:overflow-visible print:break-inside-avoid">
+                             <div className="bg-slate-50/50 px-8 py-5 border-b border-slate-100"><h3 className="font-black text-sm text-slate-900 uppercase tracking-widest flex items-center gap-2"><BarChart3 size={18} className="text-indigo-500"/> Visualisasi Histogram</h3></div>
+                             <div className="p-8 h-[450px] relative w-full"><StatsChart stats={results} histogram={results.histogram} rawData={results.rawDataArray} /></div>
+                         </div>
+
+                         {/* INTERPRETASI */}
+                         <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden print:overflow-visible print:break-inside-avoid">
+                             <div className="bg-slate-50/50 px-8 py-5 border-b border-slate-100"><h3 className="font-black text-sm text-slate-900 uppercase tracking-widest flex items-center gap-2"><Info size={18} className="text-purple-500"/> Analisis Kurva</h3></div>
+                             <div className="p-8 w-full"><Interpretation skewness={results.gamma1} kurtosis={results.gamma2} /></div>
+                         </div>
+                      </div>
+
+                      {/* ========================================= */}
+                      {/* TAB 2: TABEL ANALISIS */}
+                      {/* ========================================= */}
+                      <div className={`space-y-8 ${activeTab === 'tabel' ? 'block animate-fade-in-up' : 'hidden print:block'}`}>
+                         
+                         {/* Header Indikator saat Print */}
+                         <div className="hidden print:block mt-8 mb-4">
+                             <h2 className="text-2xl font-black text-slate-800 border-b-2 border-slate-200 pb-2">Bagian 2: Tabel Analisis Detail</h2>
+                         </div>
+
+                         <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 print:overflow-visible print:break-inside-avoid overflow-hidden w-full">
+                             <div className="bg-slate-50/50 px-8 py-5 border-b border-slate-100">
+                               <h3 className="font-black text-sm text-slate-900 uppercase tracking-widest flex items-center gap-2"><TableProperties size={18} className="text-emerald-500"/> Tabel Distribusi & Simpangan</h3>
+                             </div>
+                             
+                             <div className="p-8 w-full overflow-x-auto custom-scrollbar">
+                                {/* PANDUAN MEMBACA TABEL (Singkat) */}
+                                <div className="mb-6 bg-blue-50/50 p-4 rounded-xl border border-blue-100 text-sm text-blue-800">
+                                  <p className="font-bold flex items-center gap-2 mb-1"><Info size={16}/> Panduan Membaca Tabel:</p>
+                                  <ul className="list-disc list-inside ml-2 space-y-1 text-blue-700 opacity-90">
+                                    <li><b>$u$</b> (Metode Coding): Simpangan langkah dari nilai asumsi rata-rata ($u=0$).</li>
+                                    <li><b>$f \\cdot u^k$</b>: Digunakan untuk menghitung momen matematis (Skewness & Kurtosis).</li>
+                                    <li><b>{"$|x - \\bar{x}|$"}</b>: Deviasi absolut dari nilai rata-rata (Simpangan Rata-rata).</li>
+                                    <li><b>{"$(x - \\bar{x})^2$"}</b>: Kuadrat deviasi dari nilai rata-rata (Varians/Simpangan Baku).</li>
+                                  </ul>
+                                </div>
+                                
+                                {/* Komponen Tabel Utama */}
+                                <StatsTable stats={results} />
+                             </div>
+                         </div>
+                      </div>
+
+                      {/* ========================================= */}
+                      {/* TAB 3: LANGKAH PENYELESAIAN */}
+                      {/* ========================================= */}
+                      <div className={`space-y-8 ${activeTab === 'langkah' ? 'block animate-fade-in-up' : 'hidden print:block'}`}>
+                         
+                         {/* Header Indikator saat Print */}
+                         <div className="hidden print:block mt-8 mb-4">
+                             <h2 className="text-2xl font-black text-slate-800 border-b-2 border-slate-200 pb-2">Bagian 3: Penjabaran Rumus & Langkah</h2>
+                         </div>
+
+                         <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden print:overflow-visible print:break-inside-avoid relative w-full">
+                             <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-indigo-500 to-purple-500 print:hidden"></div>
+                             <div className="bg-indigo-50/30 px-8 py-5 border-b border-indigo-50"><h3 className="font-black text-sm text-indigo-900 uppercase tracking-widest flex items-center gap-2"><ListOrdered size={18}/> Detail Langkah Penyelesaian</h3></div>
+                             <div className="p-8 w-full overflow-x-auto custom-scrollbar"><AnalysisReport stats={results} /></div>
+                         </div>
                       </div>
                       
-                      {/* CHARTS */}
-                      <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden print:overflow-visible print:break-inside-avoid">
-                          <div className="bg-slate-50/50 px-8 py-5 border-b border-slate-100"><h3 className="font-black text-sm text-slate-900 uppercase tracking-widest flex items-center gap-2"><BarChart3 size={18} className="text-indigo-500"/> Visualisasi Histogram</h3></div>
-                          <div className="p-8 h-[450px] relative"><StatsChart stats={results} histogram={results.histogram} rawData={results.rawDataArray} /></div>
-                      </div>
-
-                      {/* INTERPRETASI */}
-                      <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden print:overflow-visible print:break-inside-avoid">
-                          <div className="bg-slate-50/50 px-8 py-5 border-b border-slate-100"><h3 className="font-black text-sm text-slate-900 uppercase tracking-widest flex items-center gap-2"><Info size={18} className="text-purple-500"/> Analisis Kurva</h3></div>
-                          <div className="p-8"><Interpretation skewness={results.gamma1} kurtosis={results.gamma2} /></div>
-                      </div>
-
-                      {/* TABEL DETAIL */}
-                      <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden print:overflow-visible print:break-inside-avoid">
-                          <div className="p-8"><StatsTable stats={results} /></div>
-                      </div>
-
-                      {/* PROCESS / STEP BY STEP */}
-                      <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden print:overflow-visible print:break-inside-avoid relative">
-                          <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-indigo-500 to-purple-500 print:hidden"></div>
-                          <div className="bg-indigo-50/30 px-8 py-5 border-b border-indigo-50"><h3 className="font-black text-sm text-indigo-900 uppercase tracking-widest flex items-center gap-2"><FileText size={18}/> Langkah Penyelesaian</h3></div>
-                          <div className="p-8"><AnalysisReport stats={results} /></div>
-                      </div>
-                      
+                      {/* PRINT FOOTER ONLY */}
                       <div className="hidden print:block mt-16 text-center text-xs font-bold text-slate-400 border-t-2 border-slate-100 pt-6 uppercase tracking-widest">
                          Dicetak dari StatistikPro • {new Date().getFullYear()}
                       </div>
                    </div>
                 </div>
              ) : (
-                // EMPTY STATE YANG MODERN
-                <div className="h-[75vh] flex flex-col items-center justify-center border-4 border-dashed border-slate-200 rounded-[3rem] bg-white/50 backdrop-blur-sm text-slate-400 transition-all m-2 shadow-sm">
+                // EMPTY STATE
+                <div className="h-[75vh] flex flex-col items-center justify-center border-4 border-dashed border-slate-200 rounded-[3rem] bg-white/50 backdrop-blur-sm text-slate-400 transition-all m-2 shadow-sm animate-fade-in-up" style={{ opacity: 0 }}>
                    <div className="bg-indigo-50 p-6 rounded-[2rem] shadow-inner mb-6 text-indigo-500 border border-indigo-100">
                       <BarChart3 size={64} strokeWidth={1.5} />
                    </div>
