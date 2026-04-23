@@ -2,6 +2,8 @@
 
 StatistikPro is a modern web application built with **Next.js** designed to simplify descriptive statistical data analysis. This app instantly calculates central tendency, data dispersion, and analyzes curve shapes (Skewness & Kurtosis), complete with a step-by-step breakdown just like manual calculations on paper.
 
+## ✨ Link
+https://statistikpro.rf.gd/
 ---
 
 ## 📸 Screenshots
