@@ -1,22 +1,21 @@
 import type { Metadata } from "next";
-// Asumsi 'Geist' dan 'Geist_Mono' adalah font kustom yang Anda gunakan
-// Ganti dengan import font Anda yang sebenarnya jika berbeda
-import { Geist, Geist_Mono } from "next/font/google"; 
+import { Source_Sans_3, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const sans = Source_Sans_3({
+  variable: "--font-sans",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const serif = Source_Serif_4({
+  variable: "--font-serif",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "StatistikPro", // Ganti dengan judul yang relevan
-  description: "Aplikasi statistik Skewness dan Kurtosis.",
+  title: "StatistikPro | Kalkulator Statistika Deskriptif",
+  description:
+    "Kalkulator statistika deskriptif untuk data tunggal dan data kelompok: mean, median, modus, simpangan baku, skewness, dan kurtosis beserta langkah hitungnya.",
 };
 
 export default function RootLayout({
@@ -25,12 +24,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    // Menambahkan suppressHydrationWarning pada tag <html>
-    // Ini menekan peringatan hidrasi untuk atribut non-kritis yang ditambahkan oleh browser atau ekstensi.
-    <html lang="en" suppressHydrationWarning> 
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+    <html lang="id">
+      <body className={`${sans.variable} ${serif.variable} antialiased`}>
         {children}
       </body>
     </html>

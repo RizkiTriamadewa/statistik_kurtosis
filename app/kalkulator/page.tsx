@@ -1,12 +1,9 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import Link from 'next/link';
-import { 
-  ArrowLeft, Upload, FileText, Plus, Trash2, 
-  Calculator, Printer, Info, Activity, BarChart3, LineChart, Home, TableProperties, ListOrdered
-} from 'lucide-react';
+import { Info, Printer } from 'lucide-react';
 
 import StatsChart from '../components/StatsChart';
 import StatsTable from '../components/StatsTable';
@@ -72,7 +69,7 @@ const calculateSingleStats = (rows: DataRow[]): StatsResult => {
   const mu1_u = sums.fu / n; const mu2_u = sums.fu2 / n; const mu3_u = sums.fu3 / n; const mu4_u = sums.fu4 / n;
   const mean = assumedMean + (p * mu1_u); const m2_x = (mu2_u - Math.pow(mu1_u, 2)); const m3_x = (mu3_u - 3 * mu1_u * mu2_u + 2 * Math.pow(mu1_u, 3)); const m4_x = (mu4_u - 4 * mu1_u * mu3_u + 6 * Math.pow(mu1_u, 2) * mu2_u - 3 * Math.pow(mu1_u, 4));
   const variance = m2_x; const stdDev = Math.sqrt(variance); const gamma1 = m3_x / Math.pow(stdDev, 3); const gamma2 = m4_x / Math.pow(stdDev, 4); 
-  const getValueAtPos = (pos: number) => { for(let r of tempTablePre) { if(r.fk >= pos) return r.mid; } return 0; };
+  const getValueAtPos = (pos: number) => { for(const r of tempTablePre) { if(r.fk >= pos) return r.mid; } return 0; };
   let median = 0; if (n % 2 === 1) median = getValueAtPos((n + 1) / 2); else median = (getValueAtPos(n/2) + getValueAtPos((n/2)+1)) / 2;
   const q1 = getValueAtPos(Math.ceil(n * 0.25)); const q3 = getValueAtPos(Math.ceil(n * 0.75)); const p10 = getValueAtPos(Math.ceil(n * 0.10)); const p90 = getValueAtPos(Math.ceil(n * 0.90));
   const mode = data[modeIdx]?.mid || 0; const sk1 = (mean - mode) / stdDev; const sk2 = (3 * (mean - median)) / stdDev; const sk4 = (q3 + q1 - 2 * median) / (q3 - q1); const sk5 = (p90 + p10 - 2 * median) / (p90 - p10); 
@@ -86,6 +83,14 @@ const calculateSingleStats = (rows: DataRow[]): StatsResult => {
 // ==========================================
 // 3. UI LAYOUT KALKULATOR
 // ==========================================
+const SummaryCard = ({ title, value, sub }: { title: string; value: string; sub?: string }) => (
+  <div className="rounded border border-stone-200 bg-white p-5 print:break-inside-avoid">
+    <p className="text-xs font-semibold uppercase tracking-wide text-stone-600">{title}</p>
+    <p className="mt-2 font-serif text-3xl text-stone-900">{value}</p>
+    {sub && <p className="mt-2 text-xs font-medium text-stone-600">{sub}</p>}
+  </div>
+);
+
 export default function KalkulatorPage() {
   const [inputMode, setInputMode] = useState<InputMode>('interval');
   const [activeTab, setActiveTab] = useState<ResultTab>('ringkasan');
@@ -100,14 +105,14 @@ export default function KalkulatorPage() {
 
   const handlePrint = useReactToPrint({ contentRef: printRef, documentTitle: `Laporan_Statistik_Pro` });
 
-  useEffect(() => {
-     if (inputMode === 'interval') {
-        setRows([{ id: 1, x: '31-40', f: '4' }, { id: 2, x: '41-50', f: '3' }, { id: 3, x: '51-60', f: '5' }, { id: 4, x: '61-70', f: '8' }, { id: 5, x: '71-80', f: '11' }, { id: 6, x: '81-90', f: '7' }, { id: 7, x: '91-100', f: '2' }]);
-     } else {
-        setRows([{ id: 1, x: '60', f: '2' }, { id: 2, x: '65', f: '5' }, { id: 3, x: '70', f: '10' }, { id: 4, x: '75', f: '8' }, { id: 5, x: '80', f: '4' }]);
-     }
-     setResults(null); 
-  }, [inputMode]);
+  const changeMode = (mode: InputMode) => {
+    setInputMode(mode);
+    setRows(mode === 'interval'
+      ? [{ id: 1, x: '31-40', f: '4' }, { id: 2, x: '41-50', f: '3' }, { id: 3, x: '51-60', f: '5' }, { id: 4, x: '61-70', f: '8' }, { id: 5, x: '71-80', f: '11' }, { id: 6, x: '81-90', f: '7' }, { id: 7, x: '91-100', f: '2' }]
+      : [{ id: 1, x: '60', f: '2' }, { id: 2, x: '65', f: '5' }, { id: 3, x: '70', f: '10' }, { id: 4, x: '75', f: '8' }, { id: 5, x: '80', f: '4' }]);
+    setResults(null);
+    setError('');
+  };
 
   const handleCalculate = (e?: React.FormEvent) => {
     if(e) e.preventDefault(); setError(''); setResults(null);
@@ -115,9 +120,8 @@ export default function KalkulatorPage() {
         if (inputMode === 'single') setResults(calculateSingleStats(rows)); 
         else setResults(calculateGroupedStats(rows));
         
-        // Selalu kembali ke tab ringkasan setelah hitung baru
         setActiveTab('ringkasan');
-    } catch (err: any) { console.error(err); setError('Pastikan input angka valid & tidak kosong.'); }
+    } catch (err) { console.error(err); setError('Pastikan input angka valid dan tidak kosong.'); }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -127,13 +131,13 @@ export default function KalkulatorPage() {
       const text = event.target?.result as string; if (!text) return;
       const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
       const newRows: DataRow[] = [];
-      let startIndex = isNaN(parseFloat(lines[0].split(/[;,]/)[0])) ? 1 : 0;
+      const startIndex = isNaN(parseFloat(lines[0].split(/[;,]/)[0])) ? 1 : 0;
       for (let i = startIndex; i < lines.length; i++) {
         const cols = lines[i].split(/[;,]/);
         if (cols.length >= 2) newRows.push({ id: Date.now() + i, x: cols[0].trim(), f: cols[1].trim() });
       }
       if (newRows.length > 0) { setRows(newRows); setInputMode(newRows[0].x.includes('-') ? 'interval' : 'single'); } 
-      else setError("Format CSV salah. Gunakan: Nilai,Frekuensi");
+      else setError("Format CSV salah. Gunakan dua kolom: nilai atau interval, lalu frekuensi.");
     };
     reader.readAsText(file); e.target.value = '';
   };
@@ -149,22 +153,14 @@ export default function KalkulatorPage() {
   const removeRow = (id: number) => { if (rows.length > 1) setRows(rows.filter(r => r.id !== id)); };
   const updateRow = (id: number, field: 'x' | 'f', value: string) => setRows(rows.map(r => r.id === id ? { ...r, [field]: value } : r));
 
-  const SummaryCard = ({ title, value, icon: Icon, colorClass, sub }: any) => (
-    <div className="bg-white p-6 rounded-[1.5rem] shadow-sm border border-slate-100 flex items-center justify-between transition-all hover:shadow-xl hover:-translate-y-1 group print:break-inside-avoid print:shadow-none print:border print:p-4">
-      <div>
-          <p className="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">{title}</p>
-          <p className="text-3xl font-black text-slate-800 tracking-tight">{value}</p>
-          {sub && <p className="text-xs font-semibold text-slate-400 mt-2 bg-slate-50 inline-block px-2 py-1 rounded-md">{sub}</p>}
-      </div>
-      <div className={`p-4 rounded-2xl ${colorClass} bg-opacity-10 transition-transform group-hover:scale-110 group-hover:rotate-3`}>
-         <Icon className="w-8 h-8" strokeWidth={2.5} />
-      </div>
-    </div>
-  );
+  const tabs: { key: ResultTab; label: string }[] = [
+    { key: 'ringkasan', label: 'Ringkasan dan kurva' },
+    { key: 'tabel', label: 'Tabel analisis' },
+    { key: 'langkah', label: 'Langkah penyelesaian' },
+  ];
 
   return (
-    <div className="min-h-screen bg-[#F4F7F9] text-slate-800 font-sans selection:bg-indigo-600 selection:text-white pb-20 relative overflow-hidden">
-      
+    <div className="min-h-screen bg-[#FAF8F3] pb-20 text-stone-800">
       <style jsx global>{`
         @media print {
           @page { size: auto; margin: 15mm; }
@@ -172,250 +168,279 @@ export default function KalkulatorPage() {
           .print\\:break-inside-avoid { break-inside: avoid !important; }
           .print\\:hidden { display: none !important; }
           .print\\:w-full { width: 100% !important; max-width: none !important; }
-          
-          /* MEMAKSA SEMUA TAB MUNCUL SAAT DI PRINT */
           .print\\:block { display: block !important; }
           .print\\:grid { display: grid !important; }
         }
         .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        
-        @keyframes fadeInUp {
-          0% { opacity: 0; transform: translateY(20px); }
-          100% { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in-up {
-          animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-        .delay-100 { animation-delay: 100ms; }
-        .delay-200 { animation-delay: 200ms; }
-        .delay-300 { animation-delay: 300ms; }
-        .delay-400 { animation-delay: 400ms; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #a8a29e; border-radius: 4px; }
       `}</style>
 
-      {/* HEADER NAV */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 w-full mb-8 print:hidden shadow-sm">
-        <div className="max-w-[95%] 2xl:max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-           <Link href="/" className="flex items-center gap-2 text-slate-600 hover:text-indigo-600 font-bold text-sm transition-all bg-slate-100 hover:bg-indigo-50 px-5 py-2.5 rounded-full border border-slate-200 hover:border-indigo-200 shadow-sm group">
-              <Home size={16} className="group-hover:-translate-x-1 transition-transform" /> Kembali ke Beranda
-           </Link>
-           <h1 className="font-black text-2xl tracking-tight text-slate-800 flex items-center gap-3">
-              <div className="bg-indigo-500 text-white p-1.5 rounded-lg shadow-md shadow-indigo-500/20"><Activity size={20} /></div> StatistikPro
-           </h1>
+      <header className="sticky top-0 z-40 border-b border-stone-200 bg-[#FAF8F3] print:hidden">
+        <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-4 px-4 py-3 sm:px-6">
+          <Link
+            href="/"
+            className="rounded border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-800 transition-colors hover:border-stone-900 hover:text-stone-900"
+          >
+            Kembali ke beranda
+          </Link>
+          <h1 className="font-serif text-xl text-stone-900">
+            Kalkulator <span className="text-red-800">StatistikPro</span>
+          </h1>
         </div>
       </header>
 
-      <main className="max-w-[95%] 2xl:max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-8 relative z-10">
-          
-          {/* TAB MODE SWITCHER (INPUT) */}
-          <div className="lg:col-span-12 flex justify-center mb-2 print:hidden animate-fade-in-up" style={{ opacity: 0 }}>
-            <div className="flex bg-slate-200/70 p-1.5 rounded-2xl shadow-inner border border-slate-200 w-fit">
-              <button onClick={() => setInputMode('single')} className={`px-8 py-3 text-sm font-bold rounded-xl transition-all duration-300 ${inputMode === 'single' ? 'bg-white shadow-md text-indigo-700' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50'}`}>Data Tunggal</button>
-              <button onClick={() => setInputMode('interval')} className={`px-8 py-3 text-sm font-bold rounded-xl transition-all duration-300 ${inputMode === 'interval' ? 'bg-white shadow-md text-indigo-700' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50'}`}>Data Kelompok</button>
+      <main className="mx-auto grid max-w-[1400px] grid-cols-1 gap-8 px-4 pt-8 sm:px-6 lg:grid-cols-12">
+        <div className="flex justify-center lg:col-span-12 print:hidden">
+          <div role="group" aria-label="Jenis data" className="inline-flex rounded border border-stone-300 bg-white p-1">
+            <button
+              type="button"
+              aria-pressed={inputMode === 'single'}
+              onClick={() => changeMode('single')}
+              className={`rounded px-5 py-2 text-sm font-semibold transition-colors ${inputMode === 'single' ? 'bg-stone-900 text-white' : 'text-stone-700 hover:bg-stone-100'}`}
+            >
+              Data tunggal
+            </button>
+            <button
+              type="button"
+              aria-pressed={inputMode === 'interval'}
+              onClick={() => changeMode('interval')}
+              className={`rounded px-5 py-2 text-sm font-semibold transition-colors ${inputMode === 'interval' ? 'bg-stone-900 text-white' : 'text-stone-700 hover:bg-stone-100'}`}
+            >
+              Data kelompok
+            </button>
+          </div>
+        </div>
+
+        <section aria-labelledby="judul-input" className="lg:col-span-4 xl:col-span-3 print:hidden">
+          <div className="rounded border border-stone-200 bg-white lg:sticky lg:top-24">
+            <div className="flex items-center justify-between gap-3 border-b border-stone-200 px-5 py-4">
+              <h2 id="judul-input" className="text-sm font-semibold uppercase tracking-wide text-stone-700">
+                Input data
+              </h2>
+              <button
+                type="button"
+                onClick={() => setRows([{ id: Date.now(), x: '', f: '1' }])}
+                className="rounded px-2 py-1 text-xs font-semibold text-red-800 hover:bg-red-50"
+              >
+                Reset
+              </button>
+            </div>
+
+            <div className="p-5">
+              <div className="mb-5 flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleDownloadTemplate}
+                  className="flex-1 rounded border border-stone-300 px-3 py-2 text-xs font-semibold text-stone-700 transition-colors hover:border-stone-900 hover:text-stone-900"
+                >
+                  Unduh template CSV
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex-1 rounded border border-stone-300 bg-stone-50 px-3 py-2 text-xs font-semibold text-stone-700 transition-colors hover:border-stone-900 hover:text-stone-900"
+                >
+                  Unggah CSV
+                </button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileUpload}
+                  accept=".csv"
+                  aria-label="Unggah file CSV berisi nilai dan frekuensi"
+                  className="hidden"
+                />
+              </div>
+
+              <div className="mb-2 grid grid-cols-12 gap-2 border-b border-stone-200 pb-2 text-[11px] font-semibold uppercase tracking-wide text-stone-600">
+                <div className="col-span-7">{inputMode === 'single' ? 'Nilai (x)' : 'Interval kelas'}</div>
+                <div className="col-span-3 text-center">Frekuensi</div>
+                <div className="col-span-2 text-center">Hapus</div>
+              </div>
+
+              <div className="custom-scrollbar max-h-[45vh] space-y-3 overflow-y-auto pb-2 pr-1">
+                {rows.map((r, index) => (
+                  <div key={r.id} className="grid grid-cols-12 items-center gap-2">
+                    <div className="col-span-7">
+                      <label htmlFor={`nilai-${r.id}`} className="sr-only">
+                        {inputMode === 'single' ? 'Nilai data' : 'Interval kelas'} baris {index + 1}
+                      </label>
+                      <input
+                        id={`nilai-${r.id}`}
+                        value={r.x}
+                        onChange={e => updateRow(r.id, 'x', e.target.value)}
+                        className="w-full rounded border border-stone-300 bg-white px-3 py-2.5 text-sm font-medium text-stone-900 outline-none transition-colors focus:border-red-800"
+                        placeholder={inputMode === 'single' ? 'Contoh: 75' : 'Contoh: 31-40'}
+                      />
+                    </div>
+                    <div className="col-span-3">
+                      <label htmlFor={`frekuensi-${r.id}`} className="sr-only">
+                        Frekuensi baris {index + 1}
+                      </label>
+                      <input
+                        id={`frekuensi-${r.id}`}
+                        type="number"
+                        value={r.f}
+                        onChange={e => updateRow(r.id, 'f', e.target.value)}
+                        className="w-full rounded border border-stone-300 bg-white px-2 py-2.5 text-center text-sm font-semibold text-stone-900 outline-none transition-colors focus:border-red-800"
+                      />
+                    </div>
+                    <div className="col-span-2 flex justify-center">
+                      <button
+                        type="button"
+                        onClick={() => removeRow(r.id)}
+                        aria-label={`Hapus baris ${index + 1}`}
+                        disabled={rows.length === 1}
+                        className="rounded px-1.5 py-2 text-xs font-semibold text-stone-500 hover:bg-red-50 hover:text-red-800 disabled:opacity-40"
+                      >
+                        Hapus
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-4 border-t border-stone-200 bg-stone-50 p-5">
+              <button
+                type="button"
+                onClick={addRow}
+                className="w-full rounded border border-dashed border-stone-400 py-2.5 text-sm font-semibold text-stone-700 transition-colors hover:border-stone-900 hover:text-stone-900"
+              >
+                + Tambah baris
+              </button>
+              {error && (
+                <div role="alert" className="flex items-center gap-2 rounded border border-red-300 bg-red-50 p-3 text-xs font-semibold text-red-900">
+                  <Info size={14} aria-hidden="true" /> {error}
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => handleCalculate()}
+                className="w-full rounded bg-stone-900 py-3 text-sm font-semibold text-white transition-colors hover:bg-red-800"
+              >
+                Hitung statistik
+              </button>
             </div>
           </div>
+        </section>
 
-          {/* SIDEBAR INPUT */}
-          <div className="lg:col-span-4 xl:col-span-3 space-y-4 print:hidden animate-fade-in-up delay-100" style={{ opacity: 0 }}>
-            <div className="bg-white rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden sticky top-[100px]">
-              <div className="p-6 bg-gradient-to-r from-slate-50 to-white border-b border-slate-100 flex justify-between items-center">
-                <h3 className="font-black text-sm text-slate-800 flex items-center gap-2 uppercase tracking-wide">
-                   <div className="bg-indigo-100 text-indigo-600 p-1.5 rounded-lg"><Calculator size={16}/></div> Input Data
-                </h3>
-                <button onClick={() => setRows([{id:Date.now(),x:'',f:'1'}])} className="text-[10px] text-red-600 font-extrabold bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"><Trash2 size={12}/> RESET</button>
+        <section aria-labelledby="judul-hasil" className="space-y-6 lg:col-span-8 xl:col-span-9 print:col-span-12 print:w-full">
+          {results ? (
+            <div className="space-y-6">
+              <div className="rounded border border-stone-200 bg-white p-4 md:p-5 print:hidden">
+                <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+                  <div>
+                    <h2 id="judul-hasil" className="font-serif text-2xl text-stone-900">Laporan analisis</h2>
+                    <p className="mt-1 text-sm text-stone-600">
+                      Data {results.isSingleMode ? 'tunggal' : 'kelompok'} sudah dihitung.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handlePrint()}
+                    className="inline-flex items-center justify-center gap-2 rounded border border-stone-900 bg-white px-5 py-2.5 text-sm font-semibold text-stone-900 transition-colors hover:bg-stone-900 hover:text-white"
+                  >
+                    <Printer size={16} aria-hidden="true" /> Cetak atau simpan PDF
+                  </button>
+                </div>
+
+                <div role="tablist" aria-label="Bagian laporan" className="custom-scrollbar mt-5 flex gap-1 overflow-x-auto border-b border-stone-200 pb-px">
+                  {tabs.map((tab) => (
+                    <button
+                      key={tab.key}
+                      role="tab"
+                      type="button"
+                      aria-selected={activeTab === tab.key}
+                      onClick={() => setActiveTab(tab.key)}
+                      className={`whitespace-nowrap rounded-t px-4 py-2.5 text-sm font-semibold transition-colors ${activeTab === tab.key ? 'border-b-2 border-red-800 text-stone-900' : 'text-stone-600 hover:text-stone-900'}`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              <div className="p-6 pb-4">
-                 <div className="flex gap-2 mb-6">
-                    <button onClick={handleDownloadTemplate} className="flex-1 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-bold text-slate-600 hover:bg-slate-100 hover:border-slate-300 transition-all flex justify-center items-center gap-1.5">
-                       <FileText size={14}/> CSV
-                    </button>
-                    <button onClick={() => fileInputRef.current?.click()} className="flex-1 py-2.5 bg-indigo-50 border border-indigo-100 text-indigo-700 rounded-xl text-[10px] font-bold hover:bg-indigo-100 transition-all flex justify-center items-center gap-1.5">
-                       <Upload size={14}/> UPLOAD
-                    </button>
-                    <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".csv" className="hidden" />
-                 </div>
+              <div ref={printRef} className="w-full space-y-8 print:bg-white print:p-8">
+                <div className="mb-10 hidden border-b-2 border-stone-900 pb-4 print:block">
+                  <p className="font-serif text-4xl text-stone-900">Laporan StatistikPro</p>
+                  <p className="mt-1 text-sm font-medium text-stone-600">Dokumen analisis otomatis</p>
+                </div>
 
-                 <div className="grid grid-cols-12 gap-2 mb-3 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">
-                    <div className="col-span-7 pl-2">{inputMode === 'single' ? 'Nilai (x)' : 'Interval Kelas'}</div>
-                    <div className="col-span-3 text-center">Freq</div>
-                 </div>
+                <div className={`space-y-8 ${activeTab === 'ringkasan' ? 'block' : 'hidden print:block'}`}>
+                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 print:grid-cols-4">
+                    <SummaryCard title="Rata-rata (mean)" value={(results.mean ?? 0).toLocaleString('id-ID', { maximumFractionDigits: 2 })} />
+                    <SummaryCard title="Modus" value={Array.isArray(results.mode) ? results.mode.join(', ') : (results.mode ?? 0).toLocaleString('id-ID', { maximumFractionDigits: 2 })} />
+                    <SummaryCard title="Simpangan baku" value={(results.stdDev ?? 0).toLocaleString('id-ID', { maximumFractionDigits: 2 })} />
+                    <SummaryCard title="Skewness (momen)" value={(results.gamma1 ?? 0).toLocaleString('id-ID', { maximumFractionDigits: 3 })} sub={`Kurtosis: ${(results.gamma2 ?? 0).toFixed(3)}`} />
+                  </div>
 
-                 <div className="space-y-3 max-h-[45vh] overflow-y-auto custom-scrollbar pr-2 pb-2">
-                   {rows.map((r) => (
-                      <div key={r.id} className="grid grid-cols-12 gap-2 items-center group relative">
-                         <div className="col-span-7">
-                            <input value={r.x} onChange={e=>updateRow(r.id,'x',e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 outline-none transition-all placeholder:font-medium placeholder:text-slate-300" placeholder={inputMode === 'single' ? "Cth: 75" : "Cth: 31-40"} />
-                         </div>
-                         <div className="col-span-3">
-                            <input type="number" value={r.f} onChange={e=>updateRow(r.id,'f',e.target.value)} className="w-full px-2 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-black text-center focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 outline-none transition-all" />
-                         </div>
-                         <div className="col-span-2 flex justify-center">
-                            <button onClick={()=>removeRow(r.id)} className="text-slate-300 hover:text-red-500 hover:bg-red-50 p-2 rounded-xl transition-all opacity-50 group-hover:opacity-100"><Trash2 size={16}/></button>
-                         </div>
-                      </div>
-                   ))}
-                 </div>
-              </div>
+                  <div className="overflow-hidden rounded border border-stone-200 bg-white print:overflow-visible print:break-inside-avoid">
+                    <div className="border-b border-stone-200 px-6 py-4">
+                      <h3 className="text-sm font-semibold uppercase tracking-wide text-stone-700">Visualisasi histogram</h3>
+                    </div>
+                    <div className="relative h-[450px] w-full p-6">
+                      <StatsChart stats={results} histogram={results.histogram} rawData={results.rawDataArray} />
+                    </div>
+                  </div>
 
-              <div className="p-6 bg-slate-50 border-t border-slate-100 space-y-4">
-                 <button onClick={addRow} className="w-full py-3 border-2 border-dashed border-slate-300 rounded-xl text-xs font-bold text-slate-500 hover:text-indigo-600 hover:border-indigo-400 hover:bg-indigo-50 transition-all flex justify-center items-center gap-2">
-                    <Plus size={16}/> TAMBAH BARIS
-                 </button>
-                 {error && <div className="text-[11px] text-red-600 bg-red-50 p-3 rounded-xl border border-red-200 text-center font-bold flex items-center justify-center gap-2 animate-pulse"><Info size={14}/> {error}</div>}
-                 
-                 <button onClick={handleCalculate} className="w-full py-4 bg-slate-900 text-white rounded-xl text-sm font-black shadow-xl shadow-slate-900/20 hover:bg-indigo-600 hover:shadow-indigo-500/30 transition-all transform active:scale-[0.98] flex justify-center items-center gap-2 uppercase tracking-wider">
-                    Hitung Statistik ✨
-                 </button>
+                  <div className="overflow-hidden rounded border border-stone-200 bg-white print:overflow-visible print:break-inside-avoid">
+                    <div className="border-b border-stone-200 px-6 py-4">
+                      <h3 className="text-sm font-semibold uppercase tracking-wide text-stone-700">Analisis kurva</h3>
+                    </div>
+                    <div className="w-full p-6">
+                      <Interpretation skewness={results.gamma1} kurtosis={results.gamma2} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className={`space-y-8 ${activeTab === 'tabel' ? 'block' : 'hidden print:block'}`}>
+                  <div className="mb-4 mt-8 hidden print:block">
+                    <h2 className="border-b border-stone-300 pb-2 font-serif text-2xl text-stone-900">Bagian 2: Tabel analisis detail</h2>
+                  </div>
+
+                  <div className="w-full overflow-hidden rounded border border-stone-200 bg-white print:overflow-visible print:break-inside-avoid">
+                    <div className="border-b border-stone-200 px-6 py-4">
+                      <h3 className="text-sm font-semibold uppercase tracking-wide text-stone-700">Tabel distribusi dan simpangan</h3>
+                    </div>
+                    <div className="custom-scrollbar w-full overflow-x-auto p-6">
+                      <StatsTable stats={results} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className={`space-y-8 ${activeTab === 'langkah' ? 'block' : 'hidden print:block'}`}>
+                  <div className="mb-4 mt-8 hidden print:block">
+                    <h2 className="border-b border-stone-300 pb-2 font-serif text-2xl text-stone-900">Bagian 3: Penjabaran rumus dan langkah</h2>
+                  </div>
+
+                  <div className="w-full overflow-hidden rounded border border-stone-200 bg-white print:overflow-visible print:break-inside-avoid">
+                    <div className="border-b border-stone-200 px-6 py-4">
+                      <h3 className="text-sm font-semibold uppercase tracking-wide text-stone-700">Detail langkah penyelesaian</h3>
+                    </div>
+                    <div className="custom-scrollbar w-full overflow-x-auto p-6">
+                      <AnalysisReport stats={results} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-16 hidden border-t border-stone-200 pt-6 text-center text-xs font-medium text-stone-500 print:block">
+                  Dicetak dari StatistikPro, {new Date().getFullYear()}
+                </div>
               </div>
             </div>
-          </div>
-
-          {/* MAIN RESULTS PANEL */}
-          <div className="lg:col-span-8 xl:col-span-9 space-y-6 print:col-span-12 print:w-full">
-             {results ? (
-                <div className="space-y-6">
-                   
-                   {/* HEADER HASIL & NAVIGASI TAB */}
-                   <div className="bg-white p-4 md:p-6 rounded-[2rem] shadow-sm border border-slate-100 print:hidden animate-fade-in-up" style={{ opacity: 0 }}>
-                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                        <div>
-                          <h2 className="font-black text-slate-900 text-2xl tracking-tight">Laporan Analisis</h2>
-                          <div className="flex items-center gap-2 mt-2">
-                             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                             <p className="text-sm font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-lg">Data {results.isSingleMode ? 'Tunggal' : 'Kelompok'} Berhasil Dihitung</p>
-                          </div>
-                        </div>
-                        <button onClick={() => handlePrint()} className="flex items-center gap-2 bg-indigo-50 text-indigo-700 px-6 py-3.5 rounded-2xl text-sm font-bold hover:bg-indigo-600 hover:text-white transition-all shadow-sm group">
-                           <Printer size={18} className="group-hover:scale-110 transition-transform"/> Cetak PDF
-                        </button>
-                      </div>
-
-                      {/* TAB BUTTONS */}
-                      <div className="flex overflow-x-auto custom-scrollbar pb-2 space-x-2 bg-slate-50 p-2 rounded-2xl border border-slate-100">
-                         <button 
-                            onClick={() => setActiveTab('ringkasan')} 
-                            className={`flex items-center gap-2 px-5 py-3 text-sm font-bold rounded-xl transition-all whitespace-nowrap ${activeTab === 'ringkasan' ? 'bg-white shadow-sm text-indigo-700 ring-1 ring-slate-200' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50'}`}>
-                            <BarChart3 size={16}/> Ringkasan & Kurva
-                         </button>
-                         <button 
-                            onClick={() => setActiveTab('tabel')} 
-                            className={`flex items-center gap-2 px-5 py-3 text-sm font-bold rounded-xl transition-all whitespace-nowrap ${activeTab === 'tabel' ? 'bg-white shadow-sm text-indigo-700 ring-1 ring-slate-200' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50'}`}>
-                            <TableProperties size={16}/> Tabel Analisis
-                         </button>
-                         <button 
-                            onClick={() => setActiveTab('langkah')} 
-                            className={`flex items-center gap-2 px-5 py-3 text-sm font-bold rounded-xl transition-all whitespace-nowrap ${activeTab === 'langkah' ? 'bg-white shadow-sm text-indigo-700 ring-1 ring-slate-200' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50'}`}>
-                            <ListOrdered size={16}/> Langkah Penyelesaian
-                         </button>
-                      </div>
-                   </div>
-
-                   {/* AREA CETAK (PRINT REF) */}
-                   <div ref={printRef} className="space-y-8 print:p-8 print:bg-white w-full">
-                      
-                      {/* PRINT HEADER ONLY */}
-                      <div className="hidden print:block mb-10 border-b-4 border-slate-900 pb-6">
-                        <h1 className="text-5xl font-black text-slate-900 tracking-tighter">Laporan StatistikPro</h1>
-                        <p className="text-base font-bold text-slate-500 mt-2 uppercase tracking-widest">Dokumen Analisis Otomatis</p>
-                      </div>
-
-                      {/* ========================================= */}
-                      {/* TAB 1: RINGKASAN & VISUAL */}
-                      {/* ========================================= */}
-                      <div className={`space-y-8 ${activeTab === 'ringkasan' ? 'block animate-fade-in-up' : 'hidden print:block'}`}>
-                         
-                         {/* SUMMARY CARDS */}
-                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 print:grid-cols-4">
-                             <SummaryCard title="Rata-rata (Mean)" value={(results.mean ?? 0).toLocaleString('id-ID', { maximumFractionDigits: 2 })} icon={Calculator} colorClass="text-blue-600 bg-blue-500" />
-                             <SummaryCard title="Modus" value={Array.isArray(results.mode) ? results.mode.join(', ') : (results.mode ?? 0).toLocaleString('id-ID', { maximumFractionDigits: 2 })} icon={BarChart3} colorClass="text-purple-600 bg-purple-500" />
-                             <SummaryCard title="Simpangan Baku" value={(results.stdDev ?? 0).toLocaleString('id-ID', { maximumFractionDigits: 2 })} icon={Activity} colorClass="text-emerald-600 bg-emerald-500" />
-                             <SummaryCard title="Skewness (Momen)" value={(results.gamma1 ?? 0).toLocaleString('id-ID', { maximumFractionDigits: 3 })} sub={`Kurtosis: ${(results.gamma2 ?? 0).toFixed(3)}`} icon={LineChart} colorClass="text-amber-600 bg-amber-500" />
-                         </div>
-                         
-                         {/* CHARTS */}
-                         <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden print:overflow-visible print:break-inside-avoid">
-                             <div className="bg-slate-50/50 px-8 py-5 border-b border-slate-100"><h3 className="font-black text-sm text-slate-900 uppercase tracking-widest flex items-center gap-2"><BarChart3 size={18} className="text-indigo-500"/> Visualisasi Histogram</h3></div>
-                             <div className="p-8 h-[450px] relative w-full"><StatsChart stats={results} histogram={results.histogram} rawData={results.rawDataArray} /></div>
-                         </div>
-
-                         {/* INTERPRETASI */}
-                         <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden print:overflow-visible print:break-inside-avoid">
-                             <div className="bg-slate-50/50 px-8 py-5 border-b border-slate-100"><h3 className="font-black text-sm text-slate-900 uppercase tracking-widest flex items-center gap-2"><Info size={18} className="text-purple-500"/> Analisis Kurva</h3></div>
-                             <div className="p-8 w-full"><Interpretation skewness={results.gamma1} kurtosis={results.gamma2} /></div>
-                         </div>
-                      </div>
-
-                      {/* ========================================= */}
-                      {/* TAB 2: TABEL ANALISIS */}
-                      {/* ========================================= */}
-                      <div className={`space-y-8 ${activeTab === 'tabel' ? 'block animate-fade-in-up' : 'hidden print:block'}`}>
-                         
-                         {/* Header Indikator saat Print */}
-                         <div className="hidden print:block mt-8 mb-4">
-                             <h2 className="text-2xl font-black text-slate-800 border-b-2 border-slate-200 pb-2">Bagian 2: Tabel Analisis Detail</h2>
-                         </div>
-
-                         <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 print:overflow-visible print:break-inside-avoid overflow-hidden w-full">
-                             <div className="bg-slate-50/50 px-8 py-5 border-b border-slate-100">
-                               <h3 className="font-black text-sm text-slate-900 uppercase tracking-widest flex items-center gap-2"><TableProperties size={18} className="text-emerald-500"/> Tabel Distribusi & Simpangan</h3>
-                             </div>
-                             
-                             <div className="p-8 w-full overflow-x-auto custom-scrollbar">
-                                {/* PANDUAN MEMBACA TABEL (Singkat) */}
-                                <div className="mb-6 bg-blue-50/50 p-4 rounded-xl border border-blue-100 text-sm text-blue-800">
-                                  <p className="font-bold flex items-center gap-2 mb-1"><Info size={16}/> Panduan Membaca Tabel:</p>
-                                  <ul className="list-disc list-inside ml-2 space-y-1 text-blue-700 opacity-90">
-                                    <li><b>$u$</b> (Metode Coding): Simpangan langkah dari nilai asumsi rata-rata ($u=0$).</li>
-                                    <li><b>$f \\cdot u^k$</b>: Digunakan untuk menghitung momen matematis (Skewness & Kurtosis).</li>
-                                    <li><b>{"$|x - \\bar{x}|$"}</b>: Deviasi absolut dari nilai rata-rata (Simpangan Rata-rata).</li>
-                                    <li><b>{"$(x - \\bar{x})^2$"}</b>: Kuadrat deviasi dari nilai rata-rata (Varians/Simpangan Baku).</li>
-                                  </ul>
-                                </div>
-                                
-                                {/* Komponen Tabel Utama */}
-                                <StatsTable stats={results} />
-                             </div>
-                         </div>
-                      </div>
-
-                      {/* ========================================= */}
-                      {/* TAB 3: LANGKAH PENYELESAIAN */}
-                      {/* ========================================= */}
-                      <div className={`space-y-8 ${activeTab === 'langkah' ? 'block animate-fade-in-up' : 'hidden print:block'}`}>
-                         
-                         {/* Header Indikator saat Print */}
-                         <div className="hidden print:block mt-8 mb-4">
-                             <h2 className="text-2xl font-black text-slate-800 border-b-2 border-slate-200 pb-2">Bagian 3: Penjabaran Rumus & Langkah</h2>
-                         </div>
-
-                         <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden print:overflow-visible print:break-inside-avoid relative w-full">
-                             <div className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-indigo-500 to-purple-500 print:hidden"></div>
-                             <div className="bg-indigo-50/30 px-8 py-5 border-b border-indigo-50"><h3 className="font-black text-sm text-indigo-900 uppercase tracking-widest flex items-center gap-2"><ListOrdered size={18}/> Detail Langkah Penyelesaian</h3></div>
-                             <div className="p-8 w-full overflow-x-auto custom-scrollbar"><AnalysisReport stats={results} /></div>
-                         </div>
-                      </div>
-                      
-                      {/* PRINT FOOTER ONLY */}
-                      <div className="hidden print:block mt-16 text-center text-xs font-bold text-slate-400 border-t-2 border-slate-100 pt-6 uppercase tracking-widest">
-                         Dicetak dari StatistikPro • {new Date().getFullYear()}
-                      </div>
-                   </div>
-                </div>
-             ) : (
-                // EMPTY STATE
-                <div className="h-[75vh] flex flex-col items-center justify-center border-4 border-dashed border-slate-200 rounded-[3rem] bg-white/50 backdrop-blur-sm text-slate-400 transition-all m-2 shadow-sm animate-fade-in-up" style={{ opacity: 0 }}>
-                   <div className="bg-indigo-50 p-6 rounded-[2rem] shadow-inner mb-6 text-indigo-500 border border-indigo-100">
-                      <BarChart3 size={64} strokeWidth={1.5} />
-                   </div>
-                   <h3 className="font-black text-slate-800 text-3xl mb-3 tracking-tight">Ruang Kerja Kosong</h3>
-                   <p className="text-base font-medium max-w-md text-center leading-relaxed text-slate-500">
-                      Silakan masukkan data pada panel di sebelah kiri, lalu klik tombol <br/> <b className="text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md">Hitung Statistik ✨</b> untuk melihat keajaiban terjadi.
-                   </p>
-                </div>
-             )}
-          </div>
+          ) : (
+            <div className="flex h-[70vh] flex-col items-center justify-center rounded border border-dashed border-stone-300 bg-white/60 p-8 text-center">
+              <h2 id="judul-hasil" className="font-serif text-3xl text-stone-900">Ruang kerja masih kosong</h2>
+              <p className="mt-3 max-w-md text-base leading-relaxed text-stone-600">
+                Masukkan data pada panel kiri, lalu tekan tombol
+                <span className="mx-1 rounded bg-stone-100 px-2 py-0.5 font-semibold text-stone-900">Hitung statistik</span>
+                untuk melihat ringkasan, tabel, dan langkah perhitungan.
+              </p>
+            </div>
+          )}
+        </section>
       </main>
     </div>
   );

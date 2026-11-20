@@ -6,29 +6,29 @@ interface InterpretationProps { skewness: number; kurtosis: number; }
 const Interpretation: React.FC<InterpretationProps> = ({ skewness, kurtosis }) => {
   
   // Logic Skewness (Alpha 3) - Normal ≈ 0
-  let skewData = { title: "Simetris", color: "bg-green-50 border-green-200 text-green-800", desc: "Kurva setimbang (Normal)." };
-  if (skewness > 0.05) skewData = { title: "Positif (Miring Kanan)", color: "bg-amber-50 border-amber-200 text-amber-800", desc: "Ekor kurva memanjang ke kanan." };
-  else if (skewness < -0.05) skewData = { title: "Negatif (Miring Kiri)", color: "bg-amber-50 border-amber-200 text-amber-800", desc: "Ekor kurva memanjang ke kiri." };
+  let skewData = { title: "Simetris", color: "border-stone-300 bg-stone-50 text-stone-900", desc: "Kurva setimbang, mendekati normal." };
+  if (skewness > 0.05) skewData = { title: "Positif (miring kanan)", color: "border-amber-300 bg-amber-50 text-amber-900", desc: "Ekor kurva memanjang ke kanan." };
+  else if (skewness < -0.05) skewData = { title: "Negatif (miring kiri)", color: "border-amber-300 bg-amber-50 text-amber-900", desc: "Ekor kurva memanjang ke kiri." };
 
   // Logic Kurtosis (Alpha 4) - Normal ≈ 3
-  let kurtData = { title: "Mesokurtik (Normal)", color: "bg-blue-50 border-blue-200 text-blue-800", desc: "Keruncingan normal (α4 ≈ 3)." };
+  let kurtData = { title: "Mesokurtik (normal)", color: "border-stone-300 bg-stone-50 text-stone-900", desc: "Keruncingan mendekati normal (α4 ≈ 3)." };
   if (kurtosis > 3.05) {
-    kurtData = { title: "Leptokurtik (Runcing)", color: "bg-red-50 border-red-200 text-red-800", desc: "Puncak kurva tinggi dan tajam (α4 > 3)." };
+    kurtData = { title: "Leptokurtik (runcing)", color: "border-red-300 bg-red-50 text-red-900", desc: "Puncak kurva tinggi dan tajam (α4 > 3)." };
   } else if (kurtosis < 2.95) {
-    kurtData = { title: "Platikurtik (Datar)", color: "bg-indigo-50 border-indigo-200 text-indigo-800", desc: "Puncak kurva datar/lebar (α4 < 3)." };
+    kurtData = { title: "Platikurtik (datar)", color: "border-stone-300 bg-stone-100 text-stone-900", desc: "Puncak kurva datar dan lebar (α4 < 3)." };
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div className={`p-4 rounded-lg border ${skewData.color}`}>
-         <h4 className="font-bold text-xs uppercase tracking-wider opacity-70 mb-1">Kemiringan (Skewness)</h4>
-         <div className="text-lg font-bold mb-1">{skewData.title}</div>
-         <p className="text-xs opacity-90">{skewData.desc}</p>
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className={`rounded border p-4 ${skewData.color}`}>
+         <h4 className="text-xs font-semibold uppercase tracking-wide opacity-80">Kemiringan (skewness)</h4>
+         <div className="mt-1 font-serif text-xl">{skewData.title}</div>
+         <p className="mt-1 text-sm leading-relaxed">{skewData.desc}</p>
       </div>
-      <div className={`p-4 rounded-lg border ${kurtData.color}`}>
-         <h4 className="font-bold text-xs uppercase tracking-wider opacity-70 mb-1">Keruncingan (Kurtosis)</h4>
-         <div className="text-lg font-bold mb-1">{kurtData.title}</div>
-         <p className="text-xs opacity-90">{kurtData.desc}</p>
+      <div className={`rounded border p-4 ${kurtData.color}`}>
+         <h4 className="text-xs font-semibold uppercase tracking-wide opacity-80">Keruncingan (kurtosis)</h4>
+         <div className="mt-1 font-serif text-xl">{kurtData.title}</div>
+         <p className="mt-1 text-sm leading-relaxed">{kurtData.desc}</p>
       </div>
     </div>
   );

@@ -32,7 +32,7 @@ ChartJS.register(
 // --- DEFINISI TIPE DATA ---
 interface HistogramBin { label: string; count: number; }
 interface HistogramResult { bins: HistogramBin[]; min: number; max: number; binWidth: number; }
-interface StatsResult { mean: number; stdDev: number; skewness: number; kurtosis: number; detailedTable: any[]; }
+interface StatsResult { mean: number; stdDev: number; skewness: number; kurtosis: number; detailedTable: unknown[]; }
 interface StatsChartProps { stats: StatsResult; histogram: HistogramResult; rawData: number[]; }
 
 const StatsChart: React.FC<StatsChartProps> = ({ stats, histogram, rawData }) => {
@@ -40,7 +40,7 @@ const StatsChart: React.FC<StatsChartProps> = ({ stats, histogram, rawData }) =>
 
   // 1. SAFETY CHECK
   if (!histogram || !histogram.bins || !stats || !rawData) {
-    return <div className="p-4 text-center text-gray-400 text-sm">Memuat grafik...</div>;
+    return <div className="p-4 text-center text-stone-600 text-sm">Memuat grafik...</div>;
   }
 
   const { mean, stdDev } = stats;
@@ -59,18 +59,26 @@ const StatsChart: React.FC<StatsChartProps> = ({ stats, histogram, rawData }) =>
   });
 
   // --- 3. DATA OGIVE ---
+  const ogivePositive: number[] = [];
   let cumPos = 0;
-  const ogivePositive = binCounts.map(count => { cumPos += count; return cumPos; });
+  for (const count of binCounts) {
+    cumPos += count;
+    ogivePositive.push(cumPos);
+  }
 
+  const ogiveNegative: number[] = [];
   let cumNeg = totalData;
-  const ogiveNegative = binCounts.map(count => { const val = cumNeg; cumNeg -= count; return val; });
+  for (const count of binCounts) {
+    ogiveNegative.push(cumNeg);
+    cumNeg -= count;
+  }
 
   // --- 4. CONFIG CHART (FIXED TYPE) ---
   // PERBAIKAN DISINI: Gunakan ChartOptions<'bar'>['scales'] agar tidak dianggap Radial/Radar chart
   const commonScales: ChartOptions<'bar'>['scales'] = {
     y: { 
       beginAtZero: true, 
-      grid: { color: '#f1f5f9' }, 
+      grid: { color: '#e7e5e4' }, 
       title: { display: true, text: 'Frekuensi' } 
     },
     x: { 
@@ -89,7 +97,7 @@ const StatsChart: React.FC<StatsChartProps> = ({ stats, histogram, rawData }) =>
         type: 'line' as const,
         label: 'Kurva Normal',
         data: normalCurvePoints,
-        borderColor: '#4f46e5', 
+        borderColor: '#991b1b', 
         borderWidth: 2,
         pointRadius: 0,
         tension: 0.4,
@@ -100,8 +108,8 @@ const StatsChart: React.FC<StatsChartProps> = ({ stats, histogram, rawData }) =>
         type: 'bar' as const,
         label: 'Frekuensi',
         data: binCounts,
-        backgroundColor: 'rgba(199, 210, 254, 0.6)',
-        borderColor: '#4f46e5',
+        backgroundColor: '#d6d3d1',
+        borderColor: '#78716c',
         borderWidth: 1,
         order: 2,
         barPercentage: 1.0,
@@ -117,24 +125,24 @@ const StatsChart: React.FC<StatsChartProps> = ({ stats, histogram, rawData }) =>
       {
         label: 'Ogive Positif (≤)',
         data: ogivePositive,
-        borderColor: '#059669',
-        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+        borderColor: '#991b1b',
+        backgroundColor: 'rgba(153, 27, 27, 0.08)',
         borderWidth: 2,
         pointRadius: 4,
         pointBackgroundColor: '#fff',
-        pointBorderColor: '#059669',
+        pointBorderColor: '#991b1b',
         tension: 0.3,
         fill: false
       },
       {
         label: 'Ogive Negatif (≥)',
         data: ogiveNegative,
-        borderColor: '#dc2626',
-        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+        borderColor: '#57534e',
+        backgroundColor: 'rgba(87, 83, 78, 0.08)',
         borderWidth: 2,
         pointRadius: 4,
         pointBackgroundColor: '#fff',
-        pointBorderColor: '#dc2626',
+        pointBorderColor: '#57534e',
         tension: 0.3,
         fill: false
       }
@@ -143,18 +151,24 @@ const StatsChart: React.FC<StatsChartProps> = ({ stats, histogram, rawData }) =>
 
   return (
     <div className="flex flex-col h-full">
-       <div className="flex gap-2 mb-4 bg-slate-100 p-1.5 rounded-lg w-fit border border-slate-200">
+       <div className="flex gap-1 mb-4 w-fit border-b border-stone-200" role="tablist" aria-label="Jenis grafik">
           <button 
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'histogram'}
             onClick={() => setActiveTab('histogram')} 
-            className={`px-4 py-1.5 text-[10px] font-bold rounded-md transition-all ${activeTab === 'histogram' ? 'bg-white shadow-sm text-indigo-600 border border-slate-100' : 'text-slate-500 hover:text-indigo-500'}`}
+            className={`px-4 py-2 text-xs font-semibold transition-colors ${activeTab === 'histogram' ? 'border-b-2 border-red-800 text-stone-900' : 'text-stone-600 hover:text-stone-900'}`}
           >
-            HISTOGRAM
+            Histogram
           </button>
           <button 
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'ogive'}
             onClick={() => setActiveTab('ogive')} 
-            className={`px-4 py-1.5 text-[10px] font-bold rounded-md transition-all ${activeTab === 'ogive' ? 'bg-white shadow-sm text-emerald-600 border border-slate-100' : 'text-slate-500 hover:text-emerald-500'}`}
+            className={`px-4 py-2 text-xs font-semibold transition-colors ${activeTab === 'ogive' ? 'border-b-2 border-red-800 text-stone-900' : 'text-stone-600 hover:text-stone-900'}`}
           >
-            OGIVE (KUMULATIF)
+            Ogive kumulatif
           </button>
        </div>
 
@@ -167,7 +181,7 @@ const StatsChart: React.FC<StatsChartProps> = ({ stats, histogram, rawData }) =>
                   maintainAspectRatio: false, 
                   plugins: { 
                     legend: { position: 'bottom', labels: { font: { size: 11 } } },
-                    title: { display: true, text: 'Distribusi Frekuensi & Normal', color: '#94a3b8', font: { weight: 'normal' } } 
+                    title: { display: true, text: 'Distribusi Frekuensi & Normal', color: '#57534e', font: { weight: 'normal' } } 
                   },
                   scales: commonScales 
                 }} 
@@ -181,7 +195,7 @@ const StatsChart: React.FC<StatsChartProps> = ({ stats, histogram, rawData }) =>
                   maintainAspectRatio: false, 
                   plugins: { 
                     legend: { position: 'bottom', labels: { font: { size: 11 } } },
-                    title: { display: true, text: 'Titik Potong = Letak Median', color: '#94a3b8', font: { weight: 'normal' } } 
+                    title: { display: true, text: 'Titik Potong = Letak Median', color: '#57534e', font: { weight: 'normal' } } 
                   },
                   // Kita definisikan ulang scales secara manual agar aman dari error spread operator pada tipe union
                   scales: {
@@ -189,7 +203,7 @@ const StatsChart: React.FC<StatsChartProps> = ({ stats, histogram, rawData }) =>
                     y: {
                         ...commonScales!.y, // Spread properti Y dari commonScales
                         title: { display: true, text: 'Frekuensi Kumulatif' } // Override title
-                    } as any // 'as any' kecil di sini diperlukan karena properti scales sangat kompleks di ChartJS
+                    } as unknown as ChartOptions<'line'>['scales']
                   }
                 }} 
              />

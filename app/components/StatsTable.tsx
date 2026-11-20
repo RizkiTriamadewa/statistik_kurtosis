@@ -1,70 +1,70 @@
 "use client";
 import React from 'react';
-import Latex from 'react-latex-next';
+import Latex from './Latex';
 
-interface StatsTableProps { stats: any; }
+interface TableRow { intervalString?: string; interval?: string; mid: number; f: number; u: number; u2: number; fu: number; fu2: number; fu3: number; fu4: number; fx: number; diff: number; diffSq: number; fDiffSq: number; }
+interface StatsTableData { detailedTable: TableRow[]; tableTotals: { freq: number; fu: number; fu2: number; fu3: number; fu4: number; fx: number; fDiffSq: number; }; }
+interface StatsTableProps { stats: StatsTableData; }
 
 const StatsTable: React.FC<StatsTableProps> = ({ stats }) => {
   if (!stats || !stats.detailedTable) return null;
 
   const fmt = (num: number) => new Intl.NumberFormat('id-ID', { maximumFractionDigits: 3 }).format(num || 0);
   
-  const zeroRow = stats.detailedTable?.find((r: any) => r.u === 0);
+  const zeroRow = stats.detailedTable?.find((r) => r.u === 0);
   const zeroLabel = zeroRow ? (zeroRow.intervalString || zeroRow.interval || 'N/A') : 'N/A';
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-10">
       
-      {/* ========================================== */}
-      {/* 1. TABEL CODING                            */}
-      {/* ========================================== */}
+      {/* TABEL CODING */}
       {stats.detailedTable && stats.detailedTable.length > 0 && (
-        <div className="border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
-           <div className="bg-indigo-50/50 px-6 py-4 border-b border-indigo-100 flex flex-col sm:flex-row justify-between sm:items-center gap-3">
-              <span className="font-black text-sm text-indigo-900 uppercase tracking-widest">Tabel Distribusi (Metode Coding)</span>
-              <span className="text-xs font-bold text-indigo-700 bg-white px-3 py-1.5 rounded-xl border border-indigo-200 shadow-sm w-fit">Pusat Asumsi (u=0): {zeroLabel}</span>
+        <div className="overflow-hidden rounded border border-stone-200">
+           <div className="flex flex-col justify-between gap-3 border-b border-stone-200 bg-stone-50 px-5 py-4 sm:flex-row sm:items-center">
+              <span className="text-sm font-semibold uppercase tracking-wide text-stone-800">Tabel distribusi, metode coding</span>
+              <span className="w-fit rounded border border-stone-300 bg-white px-2.5 py-1 text-xs font-medium text-stone-700">Pusat asumsi (u=0): {zeroLabel}</span>
            </div>
-           <div className="overflow-x-auto custom-scrollbar">
-             <table className="w-full text-right whitespace-nowrap min-w-[900px]">
-               <thead className="bg-white font-black border-b text-sm text-slate-800">
+           <div className="custom-scrollbar overflow-x-auto">
+             <table className="w-full min-w-[900px] whitespace-nowrap text-right">
+               <thead className="border-b border-stone-300 text-xs font-semibold uppercase tracking-wide text-stone-600">
                  <tr>
-                   <th className="p-4 text-left"><Latex>{"Interval"}</Latex></th>
-                   <th className="p-4 text-center"><Latex>{"$x_i$"}</Latex></th>
-                   <th className="p-4 text-center text-indigo-600"><Latex>{"$f_i$"}</Latex></th>
-                   <th className="p-4 text-center bg-indigo-50/50"><Latex>{"$u$"}</Latex></th>
-                   <th className="p-4 text-center bg-indigo-50/50"><Latex>{"$u^2$"}</Latex></th>
-                   <th className="p-4 text-center"><Latex>{"$f \\cdot u$"}</Latex></th>
-                   <th className="p-4 text-center"><Latex>{"$f \\cdot u^2$"}</Latex></th>
-                   <th className="p-4 text-center"><Latex>{"$f \\cdot u^3$"}</Latex></th>
-                   <th className="p-4 text-center"><Latex>{"$f \\cdot u^4$"}</Latex></th>
+                   <th scope="col" className="p-4 text-left"><Latex>{"Interval"}</Latex></th>
+                   <th scope="col" className="p-4 text-center"><Latex>{"$x_i$"}</Latex></th>
+                   <th scope="col" className="p-4 text-center"><Latex>{"$f_i$"}</Latex></th>
+                   <th scope="col" className="p-4 text-center"><Latex>{"$u$"}</Latex></th>
+                   <th scope="col" className="p-4 text-center"><Latex>{"$u^2$"}</Latex></th>
+                   <th scope="col" className="p-4 text-center"><Latex>{"$f \\cdot u$"}</Latex></th>
+                   <th scope="col" className="p-4 text-center"><Latex>{"$f \\cdot u^2$"}</Latex></th>
+                   <th scope="col" className="p-4 text-center"><Latex>{"$f \\cdot u^3$"}</Latex></th>
+                   <th scope="col" className="p-4 text-center"><Latex>{"$f \\cdot u^4$"}</Latex></th>
                  </tr>
                </thead>
-               <tbody className="divide-y border-b text-base text-slate-700 font-medium">
-                 {stats.detailedTable.map((row: any, idx: number) => (
-                   <tr key={idx} className={`transition-colors hover:bg-slate-50 ${row.u === 0 ? "bg-amber-50/60 hover:bg-amber-100/60" : ""}`}>
-                     <td className="p-4 text-left font-bold">{row.intervalString || row.interval}</td>
+               <tbody className="divide-y divide-stone-100 text-sm font-medium text-stone-700">
+                 {stats.detailedTable.map((row, idx: number) => (
+                   <tr key={idx} className={row.u === 0 ? "bg-amber-50" : "hover:bg-stone-50"}>
+                     <td className="p-4 text-left font-semibold text-stone-900">{row.intervalString || row.interval}</td>
                      <td className="p-4 text-center">{fmt(row.mid)}</td>
-                     <td className="p-4 text-center font-black text-slate-900">{row.f}</td>
-                     <td className="p-4 text-center font-bold text-indigo-700 bg-indigo-50/30">{row.u}</td>
-                     <td className="p-4 text-center text-indigo-700 bg-indigo-50/30">{row.u2}</td>
-                     <td className="p-4 text-center font-semibold">{fmt(row.fu)}</td>
-                     <td className="p-4 text-center font-semibold">{fmt(row.fu2)}</td>
-                     <td className="p-4 text-center text-slate-500">{fmt(row.fu3)}</td>
-                     <td className="p-4 text-center text-slate-500">{fmt(row.fu4)}</td>
+                     <td className="p-4 text-center font-semibold text-stone-900">{row.f}</td>
+                     <td className="p-4 text-center font-semibold">{row.u}</td>
+                     <td className="p-4 text-center">{row.u2}</td>
+                     <td className="p-4 text-center">{fmt(row.fu)}</td>
+                     <td className="p-4 text-center">{fmt(row.fu2)}</td>
+                     <td className="p-4 text-center text-stone-500">{fmt(row.fu3)}</td>
+                     <td className="p-4 text-center text-stone-500">{fmt(row.fu4)}</td>
                    </tr>
                  ))}
                </tbody>
-               <tfoot className="bg-slate-100 font-black text-base text-slate-800">
+               <tfoot className="border-t-2 border-stone-300 bg-stone-100 text-sm font-semibold text-stone-900">
                  <tr>
-                   <td className="p-5 text-left text-sm uppercase tracking-widest">TOTAL (<Latex>{"$\\Sigma$"}</Latex>)</td>
-                   <td className="p-5 text-center">-</td>
-                   <td className="p-5 text-center text-indigo-700 text-lg">{stats.tableTotals.freq}</td>
-                   <td className="p-5 text-center">-</td>
-                   <td className="p-5 text-center">-</td>
-                   <td className="p-5 text-center text-indigo-700">{fmt(stats.tableTotals.fu)}</td>
-                   <td className="p-5 text-center text-slate-900">{fmt(stats.tableTotals.fu2)}</td>
-                   <td className="p-5 text-center text-slate-900">{fmt(stats.tableTotals.fu3)}</td>
-                   <td className="p-5 text-center text-slate-900">{fmt(stats.tableTotals.fu4)}</td>
+                   <td className="p-4 text-left uppercase tracking-wide">Total (<Latex>{"$\\Sigma$"}</Latex>)</td>
+                   <td className="p-4 text-center">-</td>
+                   <td className="p-4 text-center">{stats.tableTotals.freq}</td>
+                   <td className="p-4 text-center">-</td>
+                   <td className="p-4 text-center">-</td>
+                   <td className="p-4 text-center">{fmt(stats.tableTotals.fu)}</td>
+                   <td className="p-4 text-center">{fmt(stats.tableTotals.fu2)}</td>
+                   <td className="p-4 text-center">{fmt(stats.tableTotals.fu3)}</td>
+                   <td className="p-4 text-center">{fmt(stats.tableTotals.fu4)}</td>
                  </tr>
                </tfoot>
              </table>
@@ -72,49 +72,47 @@ const StatsTable: React.FC<StatsTableProps> = ({ stats }) => {
         </div>
       )}
 
-      {/* ========================================== */}
-      {/* 2. TABEL SIMPANGAN (MANUAL)                */}
-      {/* ========================================== */}
+      {/* TABEL SIMPANGAN */}
       {stats.detailedTable && stats.detailedTable.length > 0 && (
-        <div className="border border-slate-200 rounded-3xl overflow-hidden shadow-sm mt-8">
-           <div className="bg-emerald-50/50 px-6 py-4 border-b border-emerald-100">
-              <span className="font-black text-sm text-emerald-900 uppercase tracking-widest">Tabel Simpangan (Metode Biasa)</span>
+        <div className="overflow-hidden rounded border border-stone-200">
+           <div className="border-b border-stone-200 bg-stone-50 px-5 py-4">
+              <span className="text-sm font-semibold uppercase tracking-wide text-stone-800">Tabel simpangan, metode biasa</span>
            </div>
-           <div className="overflow-x-auto custom-scrollbar">
-             <table className="w-full text-right whitespace-nowrap min-w-[800px]">
-               <thead className="bg-white font-black border-b text-sm text-slate-800">
+           <div className="custom-scrollbar overflow-x-auto">
+             <table className="w-full min-w-[800px] whitespace-nowrap text-right">
+               <thead className="border-b border-stone-300 text-xs font-semibold uppercase tracking-wide text-stone-600">
                  <tr>
-                   <th className="p-4 text-left"><Latex>{"Interval"}</Latex></th>
-                   <th className="p-4 text-center"><Latex>{"$f_i$"}</Latex></th>
-                   <th className="p-4 text-center"><Latex>{"$x_i$"}</Latex></th>
-                   <th className="p-4 text-center text-emerald-700 bg-emerald-50/30"><Latex>{"$f_i \\cdot x_i$"}</Latex></th>
-                   <th className="p-4 text-center text-slate-500"><Latex>{"$x_i - \\bar{x}$"}</Latex></th>
-                   <th className="p-4 text-center text-slate-500"><Latex>{"$(x_i - \\bar{x})^2$"}</Latex></th>
-                   <th className="p-4 text-center text-emerald-700"><Latex>{"$f_i(x_i - \\bar{x})^2$"}</Latex></th>
+                   <th scope="col" className="p-4 text-left"><Latex>{"Interval"}</Latex></th>
+                   <th scope="col" className="p-4 text-center"><Latex>{"$f_i$"}</Latex></th>
+                   <th scope="col" className="p-4 text-center"><Latex>{"$x_i$"}</Latex></th>
+                   <th scope="col" className="p-4 text-center"><Latex>{"$f_i \\cdot x_i$"}</Latex></th>
+                   <th scope="col" className="p-4 text-center"><Latex>{"$x_i - \\bar{x}$"}</Latex></th>
+                   <th scope="col" className="p-4 text-center"><Latex>{"$(x_i - \\bar{x})^2$"}</Latex></th>
+                   <th scope="col" className="p-4 text-center"><Latex>{"$f_i(x_i - \\bar{x})^2$"}</Latex></th>
                  </tr>
                </thead>
-               <tbody className="divide-y border-b text-base text-slate-700 font-medium">
-                 {stats.detailedTable.map((row: any, idx: number) => (
-                   <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                     <td className="p-4 text-left font-bold">{row.intervalString || row.interval}</td>
-                     <td className="p-4 text-center font-black text-slate-900">{row.f}</td>
+               <tbody className="divide-y divide-stone-100 text-sm font-medium text-stone-700">
+                 {stats.detailedTable.map((row, idx: number) => (
+                   <tr key={idx} className="hover:bg-stone-50">
+                     <td className="p-4 text-left font-semibold text-stone-900">{row.intervalString || row.interval}</td>
+                     <td className="p-4 text-center font-semibold text-stone-900">{row.f}</td>
                      <td className="p-4 text-center">{fmt(row.mid)}</td>
-                     <td className="p-4 text-center font-bold text-emerald-700 bg-emerald-50/30">{fmt(row.fx)}</td>
-                     <td className="p-4 text-center text-slate-500">{fmt(row.diff)}</td>
-                     <td className="p-4 text-center text-slate-500">{fmt(row.diffSq)}</td>
-                     <td className="p-4 text-center font-bold text-emerald-700">{fmt(row.fDiffSq)}</td>
+                     <td className="p-4 text-center font-semibold">{fmt(row.fx)}</td>
+                     <td className="p-4 text-center text-stone-500">{fmt(row.diff)}</td>
+                     <td className="p-4 text-center text-stone-500">{fmt(row.diffSq)}</td>
+                     <td className="p-4 text-center font-semibold">{fmt(row.fDiffSq)}</td>
                    </tr>
                  ))}
                </tbody>
-               <tfoot className="bg-emerald-50 font-black text-base text-emerald-900">
+               <tfoot className="border-t-2 border-stone-300 bg-stone-100 text-sm font-semibold text-stone-900">
                  <tr>
-                   <td className="p-5 text-left text-sm uppercase tracking-widest">TOTAL (<Latex>{"$\\Sigma$"}</Latex>)</td>
-                   <td className="p-5 text-center text-lg">{stats.tableTotals.freq}</td>
-                   <td className="p-5 text-center">-</td>
-                   <td className="p-5 text-center text-emerald-700 text-lg">{fmt(stats.tableTotals.fx)}</td>
-                   <td className="p-5 text-center">-</td>
-                   <td className="p-5 text-center">-</td>
-                   <td className="p-5 text-center text-emerald-700 text-lg">{fmt(stats.tableTotals.fDiffSq)}</td>
+                   <td className="p-4 text-left uppercase tracking-wide">Total (<Latex>{"$\\Sigma$"}</Latex>)</td>
+                   <td className="p-4 text-center">{stats.tableTotals.freq}</td>
+                   <td className="p-4 text-center">-</td>
+                   <td className="p-4 text-center">{fmt(stats.tableTotals.fx)}</td>
+                   <td className="p-4 text-center">-</td>
+                   <td className="p-4 text-center">-</td>
+                   <td className="p-4 text-center">{fmt(stats.tableTotals.fDiffSq)}</td>
                  </tr>
                </tfoot>
              </table>
@@ -122,42 +120,38 @@ const StatsTable: React.FC<StatsTableProps> = ({ stats }) => {
         </div>
       )}
 
-      {/* ========================================== */}
-      {/* 3. PANDUAN MEMBACA TABEL                 */}
-      {/* ========================================== */}
-      <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-100/50 rounded-3xl p-8 shadow-sm print:hidden">
-         <h4 className="font-black text-indigo-900 mb-6 flex items-center gap-3 text-lg">
-            <span className="bg-white p-2 rounded-xl shadow-sm">💡</span> Panduan Membaca Tabel
-         </h4>
-         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 text-sm text-slate-700 leading-relaxed">
+      {/* PANDUAN MEMBACA TABEL */}
+      <div className="rounded border border-stone-200 bg-white p-6 print:hidden">
+         <h4 className="font-serif text-lg text-stone-900">Panduan membaca tabel</h4>
+         <div className="mt-5 grid grid-cols-1 gap-x-8 gap-y-5 text-sm leading-relaxed text-stone-700 md:grid-cols-2">
             
             <div className="space-y-4">
-                <div className="bg-white/80 p-5 rounded-2xl border border-white shadow-sm hover:shadow-md transition-shadow">
-                   <span className="font-extrabold text-indigo-700 text-base block mb-1"><Latex>{"$x_i$"}</Latex> (Nilai Tengah):</span>
-                   <p className="text-slate-600 font-medium">Diperoleh dari <Latex>{"$\\frac{\\text{Batas Bawah} + \\text{Batas Atas}}{2}$"}</Latex> tiap kelas interval. Jika data tunggal, nilainya adalah data itu sendiri.</p>
+                <div className="border-t border-stone-200 pt-3">
+                   <span className="block font-semibold text-stone-900"><Latex>{"$x_i$"}</Latex> (nilai tengah)</span>
+                   <p className="mt-1 text-stone-700">Diperoleh dari <Latex>{"$\\frac{\\text{Batas Bawah} + \\text{Batas Atas}}{2}$"}</Latex> tiap kelas interval. Untuk data tunggal, nilainya adalah data itu sendiri.</p>
                 </div>
-                <div className="bg-white/80 p-5 rounded-2xl border border-white shadow-sm hover:shadow-md transition-shadow">
-                   <span className="font-extrabold text-indigo-700 text-base block mb-1"><Latex>{"$f_i$"}</Latex> (Frekuensi):</span>
-                   <p className="text-slate-600 font-medium">Banyaknya data yang jatuh pada kelas interval tersebut. Merupakan angka inputan asli Anda.</p>
+                <div className="border-t border-stone-200 pt-3">
+                   <span className="block font-semibold text-stone-900"><Latex>{"$f_i$"}</Latex> (frekuensi)</span>
+                   <p className="mt-1 text-stone-700">Banyaknya data pada kelas interval tersebut, sesuai angka yang Anda masukkan.</p>
                 </div>
-                <div className="bg-white/80 p-5 rounded-2xl border border-white shadow-sm hover:shadow-md transition-shadow">
-                   <span className="font-extrabold text-emerald-700 text-base block mb-1"><Latex>{"$f_i \\cdot x_i$"}</Latex> (Frek × Nilai Tengah):</span>
-                   <p className="text-slate-600 font-medium">Nilai tengah dikalikan frekuensinya. Total penjumlahan ini dibagi Total Frekuensi digunakan untuk mendapatkan nilai <b className="text-slate-800">Mean</b>.</p>
+                <div className="border-t border-stone-200 pt-3">
+                   <span className="block font-semibold text-stone-900"><Latex>{"$f_i \\cdot x_i$"}</Latex> (frekuensi kali nilai tengah)</span>
+                   <p className="mt-1 text-stone-700">Nilai tengah dikalikan frekuensinya. Jumlah kolom ini dibagi total frekuensi menghasilkan <b className="text-stone-900">mean</b>.</p>
                 </div>
             </div>
 
             <div className="space-y-4">
-                <div className="bg-white/80 p-5 rounded-2xl border border-white shadow-sm hover:shadow-md transition-shadow">
-                   <span className="font-extrabold text-indigo-700 text-base block mb-1"><Latex>{"$u$"}</Latex> (Metode Coding):</span>
-                   <p className="text-slate-600 font-medium">Teknik penyederhanaan. Angka 0 diletakkan di frekuensi tertinggi (Asumsi Mean). Kelas di atasnya bernilai negatif, di bawahnya bernilai positif.</p>
+                <div className="border-t border-stone-200 pt-3">
+                   <span className="block font-semibold text-stone-900"><Latex>{"$u$"}</Latex> (metode coding)</span>
+                   <p className="mt-1 text-stone-700">Angka 0 diletakkan pada kelas dengan frekuensi tertinggi sebagai rata-rata sementara. Kelas di atasnya bernilai negatif, di bawahnya positif.</p>
                 </div>
-                <div className="bg-white/80 p-5 rounded-2xl border border-white shadow-sm hover:shadow-md transition-shadow">
-                   <span className="font-extrabold text-indigo-700 text-base block mb-1"><Latex>{"$f \\cdot u^n$"}</Latex> (Perkalian Coding):</span>
-                   <p className="text-slate-600 font-medium">Hasil frekuensi (<Latex>{"$f_i$"}</Latex>) dikali nilai coding yang dipangkatkan. Totalnya dipakai mencari <b className="text-slate-800">Momen Asal</b>.</p>
+                <div className="border-t border-stone-200 pt-3">
+                   <span className="block font-semibold text-stone-900"><Latex>{"$f \\cdot u^n$"}</Latex> (perkalian coding)</span>
+                   <p className="mt-1 text-stone-700">Frekuensi dikali nilai coding yang dipangkatkan. Jumlahnya dipakai menghitung momen asal.</p>
                 </div>
-                <div className="bg-white/80 p-5 rounded-2xl border border-white shadow-sm hover:shadow-md transition-shadow">
-                   <span className="font-extrabold text-emerald-700 text-base block mb-1"><Latex>{"$(x_i - \\bar{x})^2$"}</Latex> (Simpangan Kuadrat):</span>
-                   <p className="text-slate-600 font-medium">Jarak tiap nilai tengah ke Rata-rata lalu dikuadratkan. Dikalikan <Latex>{"$f_i$"}</Latex> untuk menghitung <b className="text-slate-800">Varians</b> & <b className="text-slate-800">Simpangan Baku</b>.</p>
+                <div className="border-t border-stone-200 pt-3">
+                   <span className="block font-semibold text-stone-900"><Latex>{"$(x_i - \\bar{x})^2$"}</Latex> (simpangan kuadrat)</span>
+                   <p className="mt-1 text-stone-700">Jarak tiap nilai tengah ke rata-rata, lalu dikuadratkan. Dikalikan <Latex>{"$f_i$"}</Latex> untuk menghitung varians dan simpangan baku.</p>
                 </div>
             </div>
 

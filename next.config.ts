@@ -6,6 +6,6 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-};
+} satisfies NextConfig;
 
 export default nextConfig;
